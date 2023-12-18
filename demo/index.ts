@@ -29,8 +29,12 @@ async function main() {
 
 
     let foundTx = false;
+    const expectedTxTo = authSigner.address
     const txHandler = mevShareClient.on("transaction", async (tx: IPendingTransaction) => {
-        if (tx && tx.to == "0x9A8f92a830A5cB89a3816e3D267CB7791c16b04D") {
+        if (tx && tx.to?.toLowerCase() == expectedTxTo.toLowerCase()) {
+            // You can search by tx.hash in
+            // https://mev-share-goerli.flashbots.net/
+            // https://mev-share.flashbots.net/
             console.log("Transaction: ", tx);
             foundTx = true;
         }
@@ -56,6 +60,7 @@ async function main() {
     const tx: TransactionRequest = {
         type: 2,
         chainId: Number(chainId),
+        from: authSigner.address,
         to: toAddress,
         nonce,
         value: amount,
@@ -67,7 +72,7 @@ async function main() {
 
     const signedTx = await authSigner.signTransaction(tx);
 
-    const BLOCK_RANGE_SIZE = 10;
+    const BLOCK_RANGE_SIZE = 25;
 
     const targetBlock = await provider.getBlockNumber();
     const maxBlockNumber = targetBlock + BLOCK_RANGE_SIZE;
