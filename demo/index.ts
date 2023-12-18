@@ -1,5 +1,5 @@
-import MevShareClient, { BundleParams } from "@flashbots/mev-share-client";
-import { JsonRpcProvider, Wallet } from "ethers";
+import MevShareClient, { BundleParams, IPendingBundle, IPendingTransaction, TransactionOptions } from "@flashbots/mev-share-client";
+import { JsonRpcProvider, TransactionRequest, Wallet, ethers } from "ethers";
 import dotenv from "dotenv";
 dotenv.config({
     path: "../.env"
@@ -14,7 +14,6 @@ export function getMevShareClient(chainId: number, authSigner: Wallet) {
 }
 
 async function main() {
-
     // Set up the mev-share client
     const chainId = process.env.CHAIN_ID;
     if (!chainId) throw new Error("CHAIN_ID not set");
@@ -26,38 +25,105 @@ async function main() {
 
     const authSigner = new Wallet(authPrivateKey).connect(provider);
 
-    const mevShareClient = getMevShareClient(Number(chainId), authSigner)
+    const mevShareClient = MevShareClient.fromNetwork(authSigner, { chainId: Number(chainId) })
+
+
+    let foundTx = false;
+    const txHandler = mevShareClient.on("transaction", async (tx: IPendingTransaction) => {
+        if (tx && tx.to == "0x9A8f92a830A5cB89a3816e3D267CB7791c16b04D") {
+            console.log("Transaction: ", tx);
+            foundTx = true;
+        }
+    })
+
+    const bundleHandler = mevShareClient.on("bundle", async (tx: IPendingBundle) => {
+        const firstTx = tx.txs ? tx.txs[0] : undefined;
+        if (firstTx && firstTx.to == "0x9A8f92a830A5cB89a3816e3D267CB7791c16b04D") {
+            console.log("Bundle: ", tx);
+        }
+    })
 
     // Set up the bundle parameters
     const toAddress = authSigner.address; // to myself
     const amount = 1; // 1 wei
 
-    const tx = {
+    const block = await provider.getBlock("latest");
+    const baseFee = block?.baseFeePerGas || 0n;
+    const nonce = await authSigner.getNonce()
+
+    const maxPriorityFeePerGas = ethers.parseUnits("1", "gwei");
+    const maxFeePerGas = baseFee * 2n;
+    const tx: TransactionRequest = {
+        type: 2,
+        chainId: Number(chainId),
         to: toAddress,
-        value: amount
+        nonce,
+        value: amount,
+        gasLimit: 200000,
+        maxFeePerGas: maxFeePerGas,
+        // This check is for testsnets where baseFeePerGas is usually smaller than maxPriorityFeePerGas
+        maxPriorityFeePerGas: maxPriorityFeePerGas >= maxFeePerGas ? maxFeePerGas : maxPriorityFeePerGas,
     };
 
     const signedTx = await authSigner.signTransaction(tx);
 
-    const targetBlock = await provider.getBlockNumber() + 1;
-
     const BLOCK_RANGE_SIZE = 10;
+
+    const targetBlock = await provider.getBlockNumber();
+    const maxBlockNumber = targetBlock + BLOCK_RANGE_SIZE;
 
     const bundle = [
         { tx: signedTx, canRevert: false },
     ]
 
-    const params: BundleParams = {
-        inclusion: {
-            block: targetBlock,
-            maxBlock: targetBlock + BLOCK_RANGE_SIZE,
+    const shareTx: TransactionOptions = {
+        hints: {
+            logs: true,
+            calldata: true,
+            functionSelector: true,
+            contractAddress: true,
         },
-        body: bundle,
+        maxBlockNumber: maxBlockNumber,
+        builders: chainId == "1" ? [
+            "flashbots",
+            "f1b.io",
+            "rsync",
+            "beaverbuild.org",
+            "builder0x69",
+            "Titan",
+            "EigenPhi",
+            "boba-builder",
+            "Gambit Labs",
+            "payload",
+        ] : undefined
+    };
+
+
+    const transactionsResult = await mevShareClient.sendTransaction(signedTx, shareTx);
+
+    console.log("Transaction result: ", transactionsResult);
+
+
+    // Send a bundle with the transaction
+    // const params: BundleParams = {
+    //     inclusion: {
+    //         block: targetBlock,
+    //         maxBlock: maxBlockNumber,
+    //     },
+    //     body: bundle,
+    // }
+
+    // const bundleResult = await mevShareClient.sendBundle(params)
+
+    // console.log("Bundle result: ", bundleResult);
+
+    while (!foundTx) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
-    const bundleResult = await mevShareClient.sendBundle(params)
-
-    console.log("Bundle result: ", bundleResult);
+    console.log("Closing handlers")
+    txHandler.close()
+    bundleHandler.close()
 }
 
 main();
