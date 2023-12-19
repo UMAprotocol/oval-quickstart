@@ -4,6 +4,3 @@
 [submodule "lib/oval-contracts"]
 	path = lib/oval-contracts
 	url = https://github.com/UMAprotocol/oval-contracts
-[submodule "lib/openzeppelin-contracts"]
-	path = lib/openzeppelin-contracts
-	url = https://github.com/openzeppelin/openzeppelin-contracts
