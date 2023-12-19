@@ -2,8 +2,8 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
-import "./ChainlinkOvalImmutable.sol";
-import "../interfaces/chainlink/IAggregatorV3Source.sol";
+import {ChainlinkOvalImmutable} from "../src/ChainlinkOvalImmutable.sol";
+import {IAggregatorV3Source} from "oval-contracts/interfaces/chainlink/IAggregatorV3Source.sol";
 
 contract ChainlinkOvalImmutableScript is Script {
     function run() external {
@@ -18,12 +18,12 @@ contract ChainlinkOvalImmutableScript is Script {
         address[] memory unlockers = new address[](1);
         unlockers[0] = address(uint160(uint256(keccak256(abi.encodePacked(unlockersString)))));
 
+        IAggregatorV3Source source = IAggregatorV3Source(chainlink);
+        uint8 decimals = IAggregatorV3Source(chainlink).decimals();
         vm.startBroadcast(deployerPrivateKey);
 
-        IAggregatorV3Source source = IAggregatorV3Source(chainlink);
-        uint8 decimals = source.decimals(); // We can re-use the source decimals.
-        require(decimals >= 0 && decimals <= 18, "Decimals must be a valid value");
-        ChainlinkOval oracle = new ChainlinkOvalImmutable(source, decimals, lockWindow, maxTraversal, unlockers);
+        ChainlinkOvalImmutable oracle =
+            new ChainlinkOvalImmutable(source, decimals, lockWindow, maxTraversal, unlockers);
 
         console.log("Deployed ChainlinkOvalImmutable contract at address: ", address(oracle));
 
