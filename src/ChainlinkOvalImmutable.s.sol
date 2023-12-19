@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+// SPDX-License-Identifier: AGPL-3.0-only
+pragma solidity ^0.8.0;
 
 import "forge-std/Script.sol";
 import {ChainlinkOvalImmutable} from "../src/ChainlinkOvalImmutable.sol";
-import {IAggregatorV3Source} from "oval-contracts/interfaces/chainlink/IAggregatorV3Source.sol";
+import {IAggregatorV3Source} from "oval/src/interfaces/chainlink/IAggregatorV3Source.sol";
 
 contract ChainlinkOvalImmutableScript is Script {
     function run() external {

@@ -1,1 +1,2 @@
-oval-contracts/=lib/oval-contracts/src/
+oval/=lib/oval-contracts/
+openzeppelin-contracts/=lib/oval-contracts/lib/openzeppelin-contracts
