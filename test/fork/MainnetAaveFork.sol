@@ -39,6 +39,8 @@ contract Aave3LiquidationTest is CommonTest {
         vm.createSelectFork("mainnet", oracleUpdateBlock - 1); // Rolling to the block before the oracle update to start off all tests.
     }
 
+    // Show that before the Oracle update the position is healthy and after the update it is not. This creates the
+    // conditions for the liquidation that follows in later tests.
     function testUserPositionHealth() public {
         // We start before applying the oracle update. At this location the position should still be healthy.
         assertTrue(isPositionHealthy());
@@ -50,6 +52,8 @@ contract Aave3LiquidationTest is CommonTest {
         assertFalse(isPositionHealthy());
     }
 
+    // Show that we can execute the liquidation within the fork. Roll to right after the oracle update and execute.
+    // We should see the position get liquidated.
     function testCanExecuteStandardLiquidation() public {
         seedLiquidator();
         //Show that we can execute the liquidation within the fork. Roll to right after the oracle update and execute.
@@ -64,6 +68,8 @@ contract Aave3LiquidationTest is CommonTest {
         assertTrue(healthFactorAfter > 1e18); // Health factor should be greater than 1 after liquidation.
     }
 
+    // Show that we can deploy an Oval contract and replace the Aave oracle with it. We should then be able to show that
+    // Aave liquidations are blocked until the Oval is unlocked, at which point the liquidation can be executed as usual.
     function testCanReplaceSourceAndExecuteLiquidation() public {
         seedLiquidator();
         createOvalAndUnlock(); // Deploy an Oval contract and update it.
@@ -90,6 +96,8 @@ contract Aave3LiquidationTest is CommonTest {
         assertTrue(isPositionHealthy()); // Post liquidation position should be healthy again.
     }
 
+    // Show that we can gracefully fall back to the source oracle if the Oval is not unlocked. This would be the case
+    // if the permissioned actor went offline or MEV-share broke.
     function testOvalGracefullyFallsBackToSourceIfNoUnlockApplied() public {
         seedLiquidator();
         createOvalAndUnlock(); // Deploy an Oval contract and update it.
@@ -118,8 +126,9 @@ contract Aave3LiquidationTest is CommonTest {
         lendingPool.liquidationCall(address(collateralAsset), address(usdcDebtAsset), user, type(uint256).max, false);
         assertTrue(isPositionHealthy()); // Post liquidation position should be healthy again.
     }
-
-    // Helpers
+    /////////////
+    // Helpers //
+    /////////////
 
     function seedLiquidator() public {
         assertTrue(usdcDebtAsset.balanceOf(liquidator) == 0);
