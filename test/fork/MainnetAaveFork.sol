@@ -28,10 +28,11 @@ contract Aave3LiquidationTest is CommonTest {
     IAggregatorV3Source sourceChainlinkOracle = IAggregatorV3Source(0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419);
     IAaveOracle aaveOracle = IAaveOracle(0x54586bE62E3c3580375aE3723C145253060Ca0C2); // Aave v3 oracle
 
-    // Chainlink was updated in the block below. The tx hash is the transaction right after the oracle is updated.
+    // Chainlink was updated in the block below. The tx hash is the transaction right after the oracle is updated and is
+    // the tx inwhich the liquidation occured on mainnet. This is the Liquidation we will be replaying in the tests.
     // If we want to back run the oracle we want to replace this transaction with our actions in the tests.
     uint256 oracleUpdateBlock = 18018927;
-    bytes32 postOracleUpdateTx = 0x33ada9fb50abfbf29b59647328bd5fff5121ec04ec43a64f1540de0c898dfd6f;
+    bytes32 liquidationTx = 0x33ada9fb50abfbf29b59647328bd5fff5121ec04ec43a64f1540de0c898dfd6f;
 
     ChainlinkOvalImmutable oval; // Instance of Oval that is set.
 
@@ -46,7 +47,7 @@ contract Aave3LiquidationTest is CommonTest {
         assertTrue(isPositionHealthy());
 
         assertTrue(block.number == oracleUpdateBlock - 1);
-        vm.rollFork(postOracleUpdateTx); // Right after the oracle update the position should be underwater.
+        vm.rollFork(liquidationTx); // Right after the oracle update the position should be underwater.
         assertTrue(block.number == oracleUpdateBlock);
 
         assertFalse(isPositionHealthy());
@@ -57,7 +58,7 @@ contract Aave3LiquidationTest is CommonTest {
     function testCanExecuteStandardLiquidation() public {
         seedLiquidator();
         //Show that we can execute the liquidation within the fork. Roll to right after the oracle update and execute.
-        vm.rollFork(postOracleUpdateTx);
+        vm.rollFork(liquidationTx);
         vm.prank(liquidator);
         lendingPool.liquidationCall(address(collateralAsset), address(usdcDebtAsset), user, type(uint256).max, false);
 
@@ -86,8 +87,7 @@ contract Aave3LiquidationTest is CommonTest {
         vm.prank(permissionedUnlocker);
         oval.unlockLatestValue();
         (, int256 latestAnswer,, uint256 latestTimestamp,) = sourceChainlinkOracle.latestRoundData();
-        assertTrue(oval.latestAnswer() == latestAnswer);
-        assertTrue(oval.latestTimestamp() == latestTimestamp);
+        assertTrue(oval.latestAnswer() == latestAnswer && oval.latestTimestamp() == latestTimestamp);
         assertTrue(aaveOracle.getAssetPrice(address(collateralAsset)) == uint256(oval.latestAnswer()));
         assertFalse(isPositionHealthy()); // Post update but pre-liquidation position should be underwater.
 
@@ -117,8 +117,7 @@ contract Aave3LiquidationTest is CommonTest {
 
         // We should see the accessors return the same values, even though the internal values are different.
         (, int256 latestAnswer,, uint256 latestTimestamp,) = sourceChainlinkOracle.latestRoundData();
-        assertTrue(oval.latestAnswer() == latestAnswer);
-        assertTrue(oval.latestTimestamp() == latestTimestamp);
+        assertTrue(oval.latestAnswer() == latestAnswer && oval.latestTimestamp() == latestTimestamp);
         assertFalse(isPositionHealthy()); // Post update but pre-liquidation position should be underwater.
 
         // Now, run the liquidation. It should succeed without Oval being unlocked due to the fallback.
@@ -150,8 +149,7 @@ contract Aave3LiquidationTest is CommonTest {
         vm.prank(permissionedUnlocker);
         oval.unlockLatestValue();
         (, int256 latestAnswer,, uint256 latestTimestamp,) = sourceChainlinkOracle.latestRoundData();
-        assertTrue(latestAnswer == oval.latestAnswer());
-        assertTrue(latestTimestamp == oval.latestTimestamp());
+        assertTrue(latestAnswer == oval.latestAnswer() && latestTimestamp == oval.latestTimestamp());
     }
 
     function setOvalAsAaveSource() public {
@@ -167,7 +165,7 @@ contract Aave3LiquidationTest is CommonTest {
     function updateChainlinkToLatestValue() public {
         // Apply the Chainlink update within Chainlink. This wont affect Oval price until it is unlocked.
         (, int256 answerBefore,, uint256 timestampBefore,) = sourceChainlinkOracle.latestRoundData();
-        vm.rollFork(postOracleUpdateTx);
+        vm.rollFork(liquidationTx);
         (, int256 answerAfter,, uint256 timestampAfter,) = sourceChainlinkOracle.latestRoundData();
 
         // Values have changed in chainlink but is stale within Oval.
