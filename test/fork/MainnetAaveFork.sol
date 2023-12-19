@@ -13,9 +13,9 @@ import {CommonTest} from "./Common.sol";
 import {ChainlinkOvalImmutable} from "../../src/ChainlinkOvalImmutable.sol"; // The sample Oval instance to use.
 
 // Required chainlink & Aave interfaces.
-import {ILendingPool} from "oval-contracts/test/fork/interfaces/aave/ILendingPool.sol";
-import {IAaveOracle} from "oval-contracts/test/fork/interfaces/aave/IAaveOracle.sol";
-import {IAggregatorV3Source} from "oval-contracts/src/interfaces/chainlink/IAggregatorV3Source.sol";
+import {ILendingPool} from "oval/test/fork/interfaces/aave/ILendingPool.sol";
+import {IAaveOracle} from "oval/test/fork/interfaces/aave/IAaveOracle.sol";
+import {IAggregatorV3Source} from "oval/src/interfaces/chainlink/IAggregatorV3Source.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 
 contract Aave3LiquidationTest is CommonTest {

@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.17;
 
-import {ImmutableController} from "oval-contracts/src/controllers/ImmutableController.sol";
-import {ChainlinkSourceAdapter} from "oval-contracts/src/adapters/source-adapters/ChainlinkSourceAdapter.sol";
-import {ChainlinkDestinationAdapter} from
-    "oval-contracts/src/adapters/destination-adapters/ChainlinkDestinationAdapter.sol";
-import {IAggregatorV3Source} from "oval-contracts/src/interfaces/chainlink/IAggregatorV3Source.sol";
+import {ImmutableController} from "oval/src/controllers/ImmutableController.sol";
+import {ChainlinkSourceAdapter} from "oval/src/adapters/source-adapters/ChainlinkSourceAdapter.sol";
+import {ChainlinkDestinationAdapter} from "oval/src/adapters/destination-adapters/ChainlinkDestinationAdapter.sol";
+import {IAggregatorV3Source} from "oval/src/interfaces/chainlink/IAggregatorV3Source.sol";
 
 /**
  * @title OvalOracle instance that has input and output adapters of Chainlink and ImmutableController.
