@@ -13,4 +13,10 @@ docs/
 # Dotenv file
 .env
 
+# Node modules
+node_modules/
+
+dist/
+
+lib/
 broadcast/
