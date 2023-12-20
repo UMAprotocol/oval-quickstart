@@ -66,7 +66,7 @@ contract Aave3LiquidationTest is CommonTest {
         assertTrue(collateralAsset.balanceOf(liquidator) > 0); // Some amount of WETH received from the liquidation
 
         (,,,,, uint256 healthFactorAfter) = lendingPool.getUserAccountData(user);
-        assertTrue(healthFactorAfter > 1e18); // Health factor should be greater than 1 after liquidation.
+        assertTrue(isPositionHealthy()); // Health factor should be greater than 1 after liquidation.
     }
 
     // Show that we can deploy an Oval contract and replace the Aave oracle with it. We should then be able to show that
