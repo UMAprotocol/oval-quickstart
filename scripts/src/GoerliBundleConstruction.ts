@@ -26,10 +26,14 @@ async function main() {
   const chainId = process.env.CHAIN_ID;
   if (!chainId) throw new Error("CHAIN_ID not set");
 
-  const DEMO_PRICE_FEED_ADDRESS = process.env["DEMO_PRICE_FEED_ADDRESS"] || "0xB5f27d888ad78D1274d169bF41c174F51f615e2A";
-  const OVAL_ADDRESS = process.env["OVAL_ADDRESS"] || "0x238CD3ef5248aff94b397095835d608BD7bAe8fb";
-  const LIQUIDATION_DEMO_ADDRESS = process.env["LIQUIDATION_DEMO_ADDRESS"] || "0x8Dbb74b65986605d6b122c326c39D8215C88132e";
-  const PAY_BUILDER_ADDRESS = process.env["PAY_BUILDER_ADDRESS"] || "0x73A07d4634D2C869185842d05eb615f6AB54F388";
+  const DEMO_PRICE_FEED_ADDRESS = process.env["DEMO_PRICE_FEED_ADDRESS"];
+  if (!DEMO_PRICE_FEED_ADDRESS) throw new Error("DEMO_PRICE_FEED_ADDRESS not set");
+  const OVAL_ADDRESS = process.env["OVAL_ADDRESS"];
+  if (!OVAL_ADDRESS) throw new Error("OVAL_ADDRESS not set");
+  const LIQUIDATION_DEMO_ADDRESS = process.env["LIQUIDATION_DEMO_ADDRESS"];
+  if (!LIQUIDATION_DEMO_ADDRESS) throw new Error("LIQUIDATION_DEMO_ADDRESS not set");
+  const PAY_BUILDER_ADDRESS = process.env["PAY_BUILDER_ADDRESS"];
+  if (!PAY_BUILDER_ADDRESS) throw new Error("PAY_BUILDER_ADDRESS not set");
 
   const provider = getProvider(chainId);
 
