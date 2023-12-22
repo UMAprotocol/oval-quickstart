@@ -99,16 +99,17 @@ async function main() {
     gasLimit: 200000,
     data: oval.interface.encodeFunctionData("unlockLatestValue"),
     maxFeePerGas: baseFee * 2n,
-    maxPriorityFeePerGas: baseFee * 2n, // searcher should pay the full tip. TODO set to 0n
+    maxPriorityFeePerGas: 0, // searcher should pay the full tip. TODO set to 0n
     chainId: chainId
   };
 
   // Transaction to liquidate the position
+  const priorityFee = ethers.parseUnits("1", "gwei");
   const liquidateTransaction = {
     to: LIQUIDATION_DEMO_ADDRESS,
     type: 2,
     maxFeePerGas: baseFee * 2n,
-    maxPriorityFeePerGas: 0,
+    maxPriorityFeePerGas: priorityFee > baseFee * 2n ? baseFee * 2n : priorityFee,
     gasLimit: 200000,
     nonce: nonce + 1,
     value: 0,
