@@ -137,12 +137,9 @@ async function main() {
     { tx: await authSigner.signTransaction(blockBuilderPaymentTransaction), canRevert: false },
   ]
 
-  const protocolRefund = 75;
+  const protocolRefundPercentage = 75;
   const params = {
-    inclusion: {
-      block: currentBlock,
-      maxBlock: currentBlock + 25,
-    },
+    inclusion: { block: currentBlock, maxBlock: currentBlock + 25 },
     body: bundle,
     validity: {
       refundConfig: [
@@ -160,12 +157,12 @@ async function main() {
         functionSelector: true,
         txHash: true,
       },
-      wantRefund: protocolRefund, // A % of the value sent to the builder is kicked back to the protocol :)
+      wantRefund: protocolRefundPercentage,
     },
-  }
+  };
 
   const searcherReturn = liquidationValue - blockBuilderPaymentTransaction.value;
-  const builderReturn = (blockBuilderPaymentTransaction.value * (100n - BigInt(protocolRefund))) / 100n;
+  const builderReturn = (blockBuilderPaymentTransaction.value * (100n - BigInt(protocolRefundPercentage))) / 100n;
   const protocolReturn = blockBuilderPaymentTransaction.value - builderReturn;
 
 
