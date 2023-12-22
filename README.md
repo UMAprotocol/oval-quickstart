@@ -1,76 +1,35 @@
-## Foundry
+## Liquidation Demo in Goerli
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
-
-Foundry consists of:
-
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
-
-## Documentation
-
-https://book.getfoundry.sh/
-
-## Usage
-
-### Build
-
-```shell
-$ forge build
-```
-
-### Test
-
-```shell
-$ forge test
-```
-
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
-
-### Liquidation Demo in Goerli
-
-#### 1. Deploy the contracts
+### 1. Deploy the contracts
 
 ```shell
 forge script ./src/script/OvalLiquidationDemo.s.sol:OvalLiquidationDemoScript --rpc-url https://goerli.infura.io/v3/<YOUR-INFURA-KEY> --private-key <YOUR-PRIVATE-KEY> --broadcast --verify --etherscan-api-key <YOUR-ETHERSCAN-API-KEY>
 ```
 
-#### 1. Deploy the contracts
+### 2. Prepare environment variables
+
+Create a `.env` file in the `scripts` directory with the following content:
+
+```shell
+NODE_URL_5=<YOUR-ETHEREUM-NODE-URL>
+CHAIN_ID=5
+PRIVATE_KEY=<DEPLOYER-PRIVATE-KEY>
+DEMO_PRICE_FEED_ADDRESS=<DEPLOYED-PRICE-FEED-ADDRESS>
+OVAL_ADDRESS=<DEPLOYED-OVAL-ADDRESS>
+LIQUIDATION_DEMO_ADDRESS=<DEPLOYED-LIQUIDATION-DEMO-ADDRESS>
+PAY_BUILDER_ADDRESS=<DEPLOYED-PAY-BUILDER-ADDRESS>
+```
+
+### 3. Generate types and build demo script
+
+Run the following commands:
+```shell
+cd scripts
+yarn && yarn generate-contract-types && yarn build
+```
+
+### 4. Run the demo script
+
+```shell
+node ./out/src/GoerliBundleConstruction.js
+```
