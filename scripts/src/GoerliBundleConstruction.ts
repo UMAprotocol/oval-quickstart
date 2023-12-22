@@ -99,7 +99,7 @@ async function main() {
     gasLimit: 200000,
     data: oval.interface.encodeFunctionData("unlockLatestValue"),
     maxFeePerGas: baseFee * 2n,
-    maxPriorityFeePerGas: 0, // searcher should pay the full tip. TODO set to 0n
+    maxPriorityFeePerGas: 0, // searcher should pay the full tip
     chainId: chainId
   };
 
