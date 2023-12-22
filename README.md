@@ -64,3 +64,13 @@ $ forge --help
 $ anvil --help
 $ cast --help
 ```
+
+### Liquidation Demo in Goerli
+
+#### 1. Deploy the contracts
+
+```shell
+forge script ./src/script/OvalLiquidationDemo.s.sol:OvalLiquidationDemoScript --rpc-url https://goerli.infura.io/v3/<YOUR-INFURA-KEY> --private-key <YOUR-PRIVATE-KEY> --broadcast --verify --etherscan-api-key <YOUR-ETHERSCAN-API-KEY>
+```
+
+#### 1. Deploy the contracts

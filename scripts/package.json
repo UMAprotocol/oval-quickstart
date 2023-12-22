@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "generate-contract-types": "rm -rf contract-types && typechain --target ethers-v6 --out-dir contract-types $(find ../out -name '*.json' ! -name 'Common.json')",
     "start": "ts-node index.ts",
     "build": "tsc"
   },
@@ -20,6 +21,8 @@
   "devDependencies": {
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3",
-    "prettier": "^3.0.0"
+    "prettier": "^3.0.0",
+    "@typechain/ethers-v6": "^0.5.1",
+    "typechain": "^8.3.2"
   }
 }

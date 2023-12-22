@@ -1,6 +1,7 @@
-import MevShareClient, { BundleParams, IPendingBundle, IPendingTransaction, TransactionOptions } from "@flashbots/mev-share-client";
-import { JsonRpcProvider, TransactionRequest, Wallet, ethers } from "ethers";
+import MevShareClient, { IPendingBundle } from "@flashbots/mev-share-client";
 import dotenv from "dotenv";
+import { JsonRpcProvider, Provider, Wallet, ethers } from "ethers";
+import { ChainlinkOvalImmutable__factory, OvalLiquidationDemoPriceFeed__factory, OvalLiquidationDemo__factory, PayBuilder__factory } from "../contract-types";
 dotenv.config();
 
 export function getProvider(chainId: string) {
@@ -11,163 +12,186 @@ export function getMevShareClient(chainId: number, authSigner: Wallet) {
   return MevShareClient.fromNetwork(authSigner, { chainId: chainId })
 }
 
+export async function getBaseFee(provider: Provider) {
+  const block = await provider.getBlock("latest");
+  const baseFee = block?.baseFeePerGas;
+  if (!baseFee) {
+    throw new Error(`Block did not contain base fee. Is this running on an EIP-1559 network?`);
+  }
+  return baseFee;
+}
+
 async function main() {
   // Set up the mev-share client
   const chainId = process.env.CHAIN_ID;
   if (!chainId) throw new Error("CHAIN_ID not set");
 
+  const DEMO_PRICE_FEED_ADDRESS = process.env["DEMO_PRICE_FEED_ADDRESS"] || "0xB5f27d888ad78D1274d169bF41c174F51f615e2A";
+  const OVAL_ADDRESS = process.env["OVAL_ADDRESS"] || "0x238CD3ef5248aff94b397095835d608BD7bAe8fb";
+  const LIQUIDATION_DEMO_ADDRESS = process.env["LIQUIDATION_DEMO_ADDRESS"] || "0x8Dbb74b65986605d6b122c326c39D8215C88132e";
+  const PAY_BUILDER_ADDRESS = process.env["PAY_BUILDER_ADDRESS"] || "0x73A07d4634D2C869185842d05eb615f6AB54F388";
+
   const provider = getProvider(chainId);
 
-  const authPrivateKey = process.env["AUTH_PRIVATE_KEY"];
-  if (!authPrivateKey) throw new Error("AUTH_PRIVATE_KEY not set");
+  const authPrivateKey = process.env["PRIVATE_KEY"];
+  if (!authPrivateKey) throw new Error("PRIVATE_KEY not set");
 
   const authSigner = new Wallet(authPrivateKey).connect(provider);
 
   const mevShareClient = MevShareClient.fromNetwork(authSigner, { chainId: Number(chainId) })
 
-
-  let foundTx = false;
-  const expectedTxTo = authSigner.address
-  const txHandler = mevShareClient.on("transaction", async (tx: IPendingTransaction) => {
-    if (tx && tx.to?.toLowerCase() == expectedTxTo.toLowerCase()) {
-      // You can search by tx.hash in
-      // https://mev-share-goerli.flashbots.net/
-      // https://mev-share.flashbots.net/
-      console.log("Transaction: ", tx);
-      foundTx = true;
-    }
-  })
-
+  // Listen for our bundle to log the hash
+  let bundleFound = false;
   const bundleHandler = mevShareClient.on("bundle", async (tx: IPendingBundle) => {
-    const firstTx = tx.txs ? tx.txs[0] : undefined;
-    if (firstTx && firstTx.to && firstTx.to.toLowerCase() == expectedTxTo.toLowerCase()) {
-      // You can search by tx.hash in
-      // https://mev-share-goerli.flashbots.net/
-      // https://mev-share.flashbots.net/
-      console.log("Bundle: ", tx);
-      foundTx = true;
+    // Get the oval address once to use in comparisons
+    const ovalAddress = (await oval.getAddress()).toLowerCase();
+    for (const transaction of tx.txs || []) {
+      if (transaction.to && transaction.to.toLowerCase() === ovalAddress) {
+        // You can search by tx.hash in
+        // https://mev-share-goerli.flashbots.net/
+        console.log("Bundle hash: ", tx.hash);
+        bundleFound = true;
+        break;
+      }
     }
-  })
+  });
 
-  // Set up the bundle parameters
-  const toAddress = authSigner.address; // to myself
-  const amount = 1; // 1 wei
+  const demoPriceFeed = await OvalLiquidationDemoPriceFeed__factory.connect(DEMO_PRICE_FEED_ADDRESS, authSigner);
+  const oval = await ChainlinkOvalImmutable__factory.connect(OVAL_ADDRESS, authSigner);
+  const liquidationDemo = await OvalLiquidationDemo__factory.connect(LIQUIDATION_DEMO_ADDRESS, authSigner);
+  const payBuilder = await PayBuilder__factory.connect(PAY_BUILDER_ADDRESS, authSigner);
 
-  const block = await provider.getBlock("latest");
-  const baseFee = block?.baseFeePerGas || 0n;
-  const nonce = await authSigner.getNonce()
+  let currentBlock = await provider.getBlockNumber();
 
-  const maxPriorityFeePerGas = ethers.parseUnits("1", "gwei");
-  const maxFeePerGas = baseFee * 2n;
-  const tx: TransactionRequest = {
+  // Push a new chainlink price update
+  const collateralInitialPrice = ethers.parseUnits("100", 8);
+  let newRoundId = 1;
+  const updateTime = Math.floor(new Date().getTime() / 1000);
+  console.log("Updating price feed with roundId: ", newRoundId, " price: ", ethers.formatUnits(collateralInitialPrice, 8), " updateTime: ", updateTime);
+  await (await demoPriceFeed.setValues(collateralInitialPrice, newRoundId, updateTime, updateTime, newRoundId)).wait();
+  await (await oval.unlockLatestValue()).wait();
+
+  // Create a position in the liquidation demo contract using the price above
+  const collateralAmount = ethers.parseEther("0.01");
+  console.log("Creating position in liquidation demo contract with ETH: ", ethers.formatEther(collateralAmount));
+  await (await liquidationDemo.updateCollateralisedPosition({ value: collateralAmount })).wait();
+
+  // Simulate a chainlink price update making the position undercollateralised
+  currentBlock = await provider.getBlockNumber();
+  newRoundId += 1;
+  const newCollateralPrice = ethers.parseUnits("90", 8); // 10% drop in price from initial price
+  const newUpdateTime = Math.floor(new Date().getTime() / 1000);
+  console.log("Updating price feed with roundId: ", newRoundId, " price: ", ethers.formatUnits(newCollateralPrice, 8), " updateTime: ", updateTime);
+  await (await demoPriceFeed.setValues(newCollateralPrice, newRoundId, newUpdateTime, newUpdateTime, newRoundId)).wait();
+
+  // Liquidation
+  currentBlock = await provider.getBlockNumber();
+  const nonce = await authSigner.getNonce();
+  const baseFee = await getBaseFee(provider);
+
+  // Transaction to unlockLatestValue on Oval Oracle from permissioned address
+  // In prod this would be sent by UMA or the Protocol running Oval-RPC, searchers don't need to send this (and can't)
+  const unlockTx = {
     type: 2,
-    chainId: Number(chainId),
-    from: authSigner.address,
-    to: toAddress,
+    to: OVAL_ADDRESS,
     nonce,
-    value: amount,
+    value: 0,
     gasLimit: 200000,
-    maxFeePerGas: maxFeePerGas,
-    // This check is for testsnets where baseFeePerGas is usually smaller than maxPriorityFeePerGas
-    maxPriorityFeePerGas: maxPriorityFeePerGas >= maxFeePerGas ? maxFeePerGas : maxPriorityFeePerGas,
+    data: oval.interface.encodeFunctionData("unlockLatestValue"),
+    maxFeePerGas: baseFee * 2n,
+    maxPriorityFeePerGas: baseFee * 2n, // searcher should pay the full tip. TODO set to 0n
+    chainId: chainId
   };
 
-  const tx2: TransactionRequest = {
+  // Transaction to liquidate the position
+  const liquidateTransaction = {
+    to: LIQUIDATION_DEMO_ADDRESS,
     type: 2,
-    chainId: Number(chainId),
-    from: authSigner.address,
-    to: toAddress,
-    nonce: nonce + 1,
-    value: amount + 1,
+    maxFeePerGas: baseFee * 2n,
+    maxPriorityFeePerGas: 0,
     gasLimit: 200000,
-    maxFeePerGas: maxFeePerGas,
-    // This check is for testsnets where baseFeePerGas is usually smaller than maxPriorityFeePerGas
-    maxPriorityFeePerGas: maxPriorityFeePerGas >= maxFeePerGas ? maxFeePerGas : maxPriorityFeePerGas,
+    nonce: nonce + 1,
+    value: 0,
+    data: liquidationDemo.interface.encodeFunctionData("liquidate", [authSigner.address]),
+    chainId: chainId
   };
 
-  const signedTx = await authSigner.signTransaction(tx);
-  const signedTx2 = await authSigner.signTransaction(tx2);
-
-  const BLOCK_RANGE_SIZE = 25;
-
-  const targetBlock = await provider.getBlockNumber();
-  const maxBlockNumber = targetBlock + BLOCK_RANGE_SIZE;
+  const liquidationValue = await liquidationDemo.ethBalances(authSigner.address);
+  // Transaction to pay the builder
+  const blockBuilderPaymentTransaction = {
+    to: PAY_BUILDER_ADDRESS,
+    type: 2,
+    maxFeePerGas: baseFee * 2n,
+    maxPriorityFeePerGas: 0,
+    nonce: nonce + 2,
+    gasLimit: 200000,
+    value: (liquidationValue * 90n) / 100n, // 90% of the value of the liquidation is sent to the builder
+    data: payBuilder.interface.encodeFunctionData("payBuilder"),
+    chainId: chainId,
+  };
 
   const bundle = [
-    { tx: signedTx, canRevert: true }, // can revert true for testing
-    { tx: signedTx2, canRevert: true }, // can revert true for testing
+    { tx: await authSigner.signTransaction(unlockTx), canRevert: false },
+    { tx: await authSigner.signTransaction(liquidateTransaction), canRevert: false },
+    { tx: await authSigner.signTransaction(blockBuilderPaymentTransaction), canRevert: false },
   ]
 
-  const shareTx: TransactionOptions = {
-    hints: {
-      logs: true,
-      calldata: true,
-      functionSelector: true,
-      contractAddress: true,
-    },
-    maxBlockNumber: maxBlockNumber,
-    builders: chainId == "1" ? [
-      "flashbots",
-      "f1b.io",
-      "rsync",
-      "beaverbuild.org",
-      "builder0x69",
-      "Titan",
-      "EigenPhi",
-      "boba-builder",
-      "Gambit Labs",
-      "payload",
-    ] : undefined
-  };
-
-
-  // const transactionsResult = await mevShareClient.sendTransaction(signedTx, shareTx);
-
-  // console.log("Transaction result: ", transactionsResult);
-
-
-  // Send a bundle with the transaction
-  const params: BundleParams = {
+  const protocolRefund = 75;
+  const params = {
     inclusion: {
-      block: targetBlock,
-      maxBlock: maxBlockNumber,
+      block: currentBlock,
+      maxBlock: currentBlock + 25,
     },
     body: bundle,
+    validity: {
+      refundConfig: [
+        {
+          address: LIQUIDATION_DEMO_ADDRESS,
+          percent: 100,
+        },
+      ],
+    },
     privacy: {
-      /** Data fields from bundle transactions to be shared with searchers on MEV-Share. */
       hints: {
-        logs: true,
         calldata: true,
-        functionSelector: true,
+        logs: true,
         contractAddress: true,
+        functionSelector: true,
+        txHash: true,
       },
-      /** Builders that are allowed to receive this bundle. See [mev-share spec](https://github.com/flashbots/mev-share/blob/main/builders/registration.json) for supported builders. */
-      builders: chainId == "1" ? [
-        "flashbots",
-        "f1b.io",
-        "rsync",
-        "beaverbuild.org",
-        "builder0x69",
-        "Titan",
-        "EigenPhi",
-        "boba-builder",
-        "Gambit Labs",
-        "payload",
-      ] : undefined
-    }
+      wantRefund: protocolRefund, // A % of the value sent to the builder is kicked back to the protocol :)
+    },
   }
 
-  const bundleResult = await mevShareClient.sendBundle(params)
+  const searcherReturn = liquidationValue - blockBuilderPaymentTransaction.value;
+  const builderReturn = (blockBuilderPaymentTransaction.value * (100n - BigInt(protocolRefund))) / 100n;
+  const protocolReturn = blockBuilderPaymentTransaction.value - builderReturn;
 
-  console.log("Bundle result: ", bundleResult);
 
-  while (!foundTx) {
-    await new Promise(resolve => setTimeout(resolve, 1000));
+  console.log("Liquidation found!");
+  console.log("Liquidation size eth: ", ethers.formatEther(liquidationValue), " eth");
+  console.log("Searcher return: ", ethers.formatEther(searcherReturn), " eth");
+  console.log("Builder return: ", ethers.formatEther(builderReturn), " eth");
+  console.log("Protocol return: ~", ethers.formatEther(protocolReturn), " eth");
+
+  const res = await mevShareClient.simulateBundle(params)
+
+  if (res.error) {
+    console.log("Error: ", res.error)
+    return
   }
 
-  console.log("Closing handlers")
-  txHandler.close()
-  bundleHandler.close()
+  await mevShareClient.sendBundle(params)
+
+  console.log("\nLiquidation bundle sent!");
+
+  // Wait for the bundle to be found
+  while (!bundleFound) {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+
+  // Stop listening for bundles
+  bundleHandler.close();
 }
 
 main();
