@@ -2,6 +2,7 @@ import MevShareClient, { BundleParams, HintPreferences, IPendingBundle } from "@
 import dotenv from "dotenv";
 import { JsonRpcProvider, Provider, Transaction, Wallet, ethers, keccak256 } from "ethers";
 import { ChainlinkOvalImmutable__factory, OvalLiquidationDemoPriceFeed__factory, OvalLiquidationDemo__factory, PayBuilder__factory } from "../contract-types";
+
 dotenv.config();
 
 export function getProvider(chainId: string) {
@@ -48,30 +49,9 @@ async function main() {
   const authPrivateKey = process.env["PRIVATE_KEY"];
   if (!authPrivateKey) throw new Error("PRIVATE_KEY not set");
 
-  const authPrivateKey2 = process.env["PRIVATE_KEY_2"];
-  if (!authPrivateKey2) throw new Error("PRIVATE_KEY_2 not set");
-
   const authSigner = new Wallet(authPrivateKey).connect(provider);
 
-  const authSigner2 = new Wallet(authPrivateKey2).connect(provider);
-
   const mevShareClient = MevShareClient.fromNetwork(authSigner as any, { chainId: Number(chainId) })
-
-  // Listen for our bundle to log the hash
-  let bundleFound = false;
-  const bundleHandler = mevShareClient.on("bundle", async (tx: IPendingBundle) => {
-    // Get the oval address once to use in comparisons
-    const ovalAddress = (await oval.getAddress()).toLowerCase();
-    for (const transaction of tx.txs || []) {
-      if (transaction.to && transaction.to.toLowerCase() === ovalAddress) {
-        // You can search by tx.hash in
-        // https://mev-share-goerli.flashbots.net/
-        console.log("Bundle hash: ", tx.hash);
-        bundleFound = true;
-        break;
-      }
-    }
-  });
 
   const demoPriceFeed = await OvalLiquidationDemoPriceFeed__factory.connect(DEMO_PRICE_FEED_ADDRESS, authSigner);
   const oval = await ChainlinkOvalImmutable__factory.connect(OVAL_ADDRESS, authSigner);
@@ -104,7 +84,6 @@ async function main() {
   // Liquidation
   currentBlock = await provider.getBlockNumber();
   const nonce = await authSigner.getNonce();
-  const nonce2 = await authSigner2.getNonce();
   const baseFee = await getBaseFee(provider);
 
   // Transaction to unlockLatestValue on Oval Oracle from permissioned address
@@ -130,7 +109,7 @@ async function main() {
     maxFeePerGas: baseFee * 2n,
     maxPriorityFeePerGas: priorityFee > baseFee * 2n ? baseFee * 2n : priorityFee,
     gasLimit: 200000,
-    nonce: nonce2,
+    nonce: nonce + 1,
     value: 0,
     data: liquidationDemo.interface.encodeFunctionData("liquidate", [authSigner.address]),
     chainId: chainId
@@ -142,23 +121,17 @@ async function main() {
     to: PAY_BUILDER_ADDRESS,
     type: 2,
     maxFeePerGas: baseFee * 2n,
-    maxPriorityFeePerGas: 0,
-    nonce: nonce2 + 1,
+    maxPriorityFeePerGas: priorityFee > baseFee * 2n ? baseFee * 2n : priorityFee,
+    nonce: nonce + 2,
     gasLimit: 200000,
     value: (liquidationValue * 90n) / 100n, // 90% of the value of the liquidation is sent to the builder
     data: payBuilder.interface.encodeFunctionData("payBuilder"),
     chainId: chainId,
   };
 
-  const unlockTxSigned = await authSigner.signTransaction(unlockTx);
-
-  const unlockTxHash = Transaction.from(unlockTxSigned).hash;
-
   const innerBundleBody = [
-    { tx: unlockTxSigned, canRevert: false },
+    { tx: await authSigner.signTransaction(unlockTx), canRevert: false },
   ]
-
-  const unlockBundleHash = keccak256(unlockTxHash || "");
 
   const innerBundle: ExtendedBundleParams = {
     inclusion: { block: currentBlock, maxBlock: currentBlock + 25 },
@@ -182,18 +155,14 @@ async function main() {
     },
   };
 
-  // const s = await mevShareClient.simulateBundle(innerBundle)
-
-  // const b = await mevShareClient.sendBundle(innerBundle)
-
-
   const outterBundleBody = [
     { bundle: innerBundle },
-    { tx: await authSigner2.signTransaction(liquidateTransaction), canRevert: true },
-    { tx: await authSigner2.signTransaction(blockBuilderPaymentTransaction), canRevert: true },
+    { tx: await authSigner.signTransaction(liquidateTransaction), canRevert: true },
+    { tx: await authSigner.signTransaction(blockBuilderPaymentTransaction), canRevert: true },
   ]
 
   const protocolRefundPercentage = 90;
+
   const outterBundle: BundleParams = {
     inclusion: { block: currentBlock, maxBlock: currentBlock + 25 },
     body: outterBundleBody,
@@ -231,18 +200,41 @@ async function main() {
     return
   }
 
+  // Listen for our bundle to log the hash
+  let bundleHash: string | undefined;
+  let bundle: IPendingBundle | undefined;
+  const bundleHandler = mevShareClient.on("bundle", async (tx: IPendingBundle) => {
+    if (tx.hash === bundleHash) {
+      bundle = tx;
+    }
+  });
+
   const result = await mevShareClient.sendBundle(outterBundle)
-  console.log("Bundle hash: ", keccak256(result.bundleHash));
+
+  bundleHash = keccak256(result.bundleHash);
 
   console.log("\nLiquidation bundle sent!");
 
   // Wait for the bundle to be found
-  while (!bundleFound) {
+  while (!bundle) {
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 
   // Stop listening for bundles
   bundleHandler.close();
+
+  console.log("Bundle hash: ", bundle.hash);
+
+  for (const tx of bundle.txs || []) {
+    provider.waitForTransaction((tx as any).hash).then((receipt) => {
+      console.log("Tx mined in block: ", receipt?.blockNumber);
+      console.log("Tx hash: ", receipt?.hash);
+      console.log("Tx success: ", receipt?.status);
+    }
+    ).catch((err) => {
+      console.log("Tx error: ", err);
+    });
+  }
 }
 
 main();
