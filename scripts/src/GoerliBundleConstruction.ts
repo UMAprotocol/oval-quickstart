@@ -97,7 +97,7 @@ async function main() {
     gasLimit: 200000,
     data: oval.interface.encodeFunctionData("unlockLatestValue"),
     maxFeePerGas: baseFee * 2n,
-    maxPriorityFeePerGas: priorityFee > baseFee * 2n ? baseFee * 2n : priorityFee,
+    maxPriorityFeePerGas: 0,
     chainId: chainId
   };
 
@@ -107,7 +107,7 @@ async function main() {
     to: LIQUIDATION_DEMO_ADDRESS,
     type: 2,
     maxFeePerGas: baseFee * 2n,
-    maxPriorityFeePerGas: priorityFee > baseFee * 2n ? baseFee * 2n : priorityFee,
+    maxPriorityFeePerGas: 0,
     gasLimit: 200000,
     nonce: nonce + 1,
     value: 0,
@@ -121,7 +121,7 @@ async function main() {
     to: PAY_BUILDER_ADDRESS,
     type: 2,
     maxFeePerGas: baseFee * 2n,
-    maxPriorityFeePerGas: priorityFee > baseFee * 2n ? baseFee * 2n : priorityFee,
+    maxPriorityFeePerGas: 0,
     nonce: nonce + 2,
     gasLimit: 200000,
     value: (liquidationValue * 90n) / 100n, // 90% of the value of the liquidation is sent to the builder
@@ -139,7 +139,7 @@ async function main() {
     validity: {
       refundConfig: [
         {
-          address: LIQUIDATION_DEMO_ADDRESS,
+          address: await authSigner.getAddress(),
           percent: 100,
         },
       ],
@@ -186,7 +186,6 @@ async function main() {
   const builderReturn = (blockBuilderPaymentTransaction.value * (100n - BigInt(protocolRefundPercentage))) / 100n;
   const protocolReturn = blockBuilderPaymentTransaction.value - builderReturn;
 
-
   console.log("Liquidation found!");
   console.log("Liquidation size eth: ", ethers.formatEther(liquidationValue), " eth");
   console.log("Searcher return: ", ethers.formatEther(searcherReturn), " eth");
@@ -227,9 +226,11 @@ async function main() {
 
   for (const tx of bundle.txs || []) {
     provider.waitForTransaction((tx as any).hash).then((receipt) => {
-      console.log("Tx mined in block: ", receipt?.blockNumber);
-      console.log("Tx hash: ", receipt?.hash);
-      console.log("Tx success: ", receipt?.status);
+      const isPriceUnlock = receipt?.to === OVAL_ADDRESS;
+      const isLiquidate = receipt?.to === LIQUIDATION_DEMO_ADDRESS;
+      const isPayBuilder = receipt?.to === PAY_BUILDER_ADDRESS;
+      console.log(`\n${isPriceUnlock ? "Price unlock" : isLiquidate ? "Liquidate" : isPayBuilder ? "Pay builder" : "Unknown"} tx mined!`);
+      console.log(`Tx hash: ${receipt?.hash}`);
     }
     ).catch((err) => {
       console.log("Tx error: ", err);
