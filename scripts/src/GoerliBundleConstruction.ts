@@ -1,6 +1,6 @@
-import MevShareClient, { IPendingBundle } from "@flashbots/mev-share-client";
+import MevShareClient, { BundleParams, HintPreferences, IPendingBundle } from "@flashbots/mev-share-client";
 import dotenv from "dotenv";
-import { JsonRpcProvider, Provider, Wallet, ethers } from "ethers";
+import { JsonRpcProvider, Provider, Transaction, Wallet, ethers, keccak256 } from "ethers";
 import { ChainlinkOvalImmutable__factory, OvalLiquidationDemoPriceFeed__factory, OvalLiquidationDemo__factory, PayBuilder__factory } from "../contract-types";
 dotenv.config();
 
@@ -8,8 +8,16 @@ export function getProvider(chainId: string) {
   return new JsonRpcProvider(process.env[`NODE_URL_${chainId}`]);
 }
 
-export function getMevShareClient(chainId: number, authSigner: Wallet) {
+export function getMevShareClient(chainId: number, authSigner: any) {
   return MevShareClient.fromNetwork(authSigner, { chainId: chainId })
+}
+
+export interface ExtendedBundleParams extends BundleParams {
+  privacy?: {
+    hints?: HintPreferences,
+    builders?: Array<string>,
+    wantRefund?: number, // Optional property to set total refund percent.
+  }
 }
 
 export async function getBaseFee(provider: Provider) {
@@ -40,9 +48,14 @@ async function main() {
   const authPrivateKey = process.env["PRIVATE_KEY"];
   if (!authPrivateKey) throw new Error("PRIVATE_KEY not set");
 
+  const authPrivateKey2 = process.env["PRIVATE_KEY_2"];
+  if (!authPrivateKey2) throw new Error("PRIVATE_KEY_2 not set");
+
   const authSigner = new Wallet(authPrivateKey).connect(provider);
 
-  const mevShareClient = MevShareClient.fromNetwork(authSigner, { chainId: Number(chainId) })
+  const authSigner2 = new Wallet(authPrivateKey2).connect(provider);
+
+  const mevShareClient = MevShareClient.fromNetwork(authSigner as any, { chainId: Number(chainId) })
 
   // Listen for our bundle to log the hash
   let bundleFound = false;
@@ -91,10 +104,12 @@ async function main() {
   // Liquidation
   currentBlock = await provider.getBlockNumber();
   const nonce = await authSigner.getNonce();
+  const nonce2 = await authSigner2.getNonce();
   const baseFee = await getBaseFee(provider);
 
   // Transaction to unlockLatestValue on Oval Oracle from permissioned address
   // In prod this would be sent by UMA or the Protocol running Oval-RPC, searchers don't need to send this (and can't)
+  const priorityFee = ethers.parseUnits("30", "gwei");
   const unlockTx = {
     type: 2,
     to: OVAL_ADDRESS,
@@ -103,19 +118,19 @@ async function main() {
     gasLimit: 200000,
     data: oval.interface.encodeFunctionData("unlockLatestValue"),
     maxFeePerGas: baseFee * 2n,
-    maxPriorityFeePerGas: 0, // searcher should pay the full tip
+    maxPriorityFeePerGas: priorityFee > baseFee * 2n ? baseFee * 2n : priorityFee,
     chainId: chainId
   };
 
   // Transaction to liquidate the position
-  const priorityFee = ethers.parseUnits("1", "gwei");
+
   const liquidateTransaction = {
     to: LIQUIDATION_DEMO_ADDRESS,
     type: 2,
     maxFeePerGas: baseFee * 2n,
     maxPriorityFeePerGas: priorityFee > baseFee * 2n ? baseFee * 2n : priorityFee,
     gasLimit: 200000,
-    nonce: nonce + 1,
+    nonce: nonce2,
     value: 0,
     data: liquidationDemo.interface.encodeFunctionData("liquidate", [authSigner.address]),
     chainId: chainId
@@ -128,23 +143,26 @@ async function main() {
     type: 2,
     maxFeePerGas: baseFee * 2n,
     maxPriorityFeePerGas: 0,
-    nonce: nonce + 2,
+    nonce: nonce2 + 1,
     gasLimit: 200000,
     value: (liquidationValue * 90n) / 100n, // 90% of the value of the liquidation is sent to the builder
     data: payBuilder.interface.encodeFunctionData("payBuilder"),
     chainId: chainId,
   };
 
-  const bundle = [
-    { tx: await authSigner.signTransaction(unlockTx), canRevert: false },
-    { tx: await authSigner.signTransaction(liquidateTransaction), canRevert: false },
-    { tx: await authSigner.signTransaction(blockBuilderPaymentTransaction), canRevert: false },
+  const unlockTxSigned = await authSigner.signTransaction(unlockTx);
+
+  const unlockTxHash = Transaction.from(unlockTxSigned).hash;
+
+  const innerBundleBody = [
+    { tx: unlockTxSigned, canRevert: false },
   ]
 
-  const protocolRefundPercentage = 75;
-  const params = {
+  const unlockBundleHash = keccak256(unlockTxHash || "");
+
+  const innerBundle: ExtendedBundleParams = {
     inclusion: { block: currentBlock, maxBlock: currentBlock + 25 },
-    body: bundle,
+    body: innerBundleBody,
     validity: {
       refundConfig: [
         {
@@ -160,8 +178,38 @@ async function main() {
         contractAddress: true,
         functionSelector: true,
         txHash: true,
+      }
+    },
+  };
+
+  // const s = await mevShareClient.simulateBundle(innerBundle)
+
+  // const b = await mevShareClient.sendBundle(innerBundle)
+
+
+  const outterBundleBody = [
+    { bundle: innerBundle },
+    { tx: await authSigner2.signTransaction(liquidateTransaction), canRevert: true },
+    { tx: await authSigner2.signTransaction(blockBuilderPaymentTransaction), canRevert: true },
+  ]
+
+  const protocolRefundPercentage = 90;
+  const outterBundle: BundleParams = {
+    inclusion: { block: currentBlock, maxBlock: currentBlock + 25 },
+    body: outterBundleBody,
+    validity: {
+      refund: [
+        { bodyIdx: 0, percent: protocolRefundPercentage }
+      ]
+    },
+    privacy: {
+      hints: {
+        calldata: true,
+        logs: true,
+        contractAddress: true,
+        functionSelector: true,
+        txHash: true,
       },
-      wantRefund: protocolRefundPercentage,
     },
   };
 
@@ -176,14 +224,15 @@ async function main() {
   console.log("Builder return: ", ethers.formatEther(builderReturn), " eth");
   console.log("Protocol return: ~", ethers.formatEther(protocolReturn), " eth");
 
-  const res = await mevShareClient.simulateBundle(params)
+  const res = await mevShareClient.simulateBundle(outterBundle)
 
   if (res.error) {
     console.log("Error: ", res.error)
     return
   }
 
-  await mevShareClient.sendBundle(params)
+  const result = await mevShareClient.sendBundle(outterBundle)
+  console.log("Bundle hash: ", keccak256(result.bundleHash));
 
   console.log("\nLiquidation bundle sent!");
 

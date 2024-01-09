@@ -14,10 +14,9 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
-"@flashbots/mev-share-client@^0.7.10":
+"@flashbots/mev-share-client@Reinis-FRP/mev-share-client-ts#reinis-frp/nested-bundles":
   version "0.7.10"
-  resolved "https://registry.yarnpkg.com/@flashbots/mev-share-client/-/mev-share-client-0.7.10.tgz#f86383dd91bf3bb6d6451456ce418229814009eb"
-  integrity sha512-jK2ZejfPzNY4du4pKnu9PTxMikbgHOKhfpXgAe6g/QeDyzz1yzfGLIffxa6CaqM0ygyyUMIPs3h2pgL3MzA4tg==
+  resolved "https://codeload.github.com/Reinis-FRP/mev-share-client-ts/tar.gz/803790160d50a680d380d5587b5bf1c8871b9364"
   dependencies:
     async-mutex "^0.4.0"
     axios "^1.3.4"
