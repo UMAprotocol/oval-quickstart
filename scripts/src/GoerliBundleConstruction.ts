@@ -1,4 +1,4 @@
-import MevShareClient, { BundleParams, HintPreferences, IPendingBundle } from "@flashbots/mev-share-client";
+import MevShareClient, { BundleParams, HintPreferences, IPendingBundle } from "@reinis_frp/mev-share-client";
 import dotenv from "dotenv";
 import { JsonRpcProvider, Provider, Transaction, Wallet, ethers, keccak256 } from "ethers";
 import { ChainlinkOvalImmutable__factory, OvalLiquidationDemoPriceFeed__factory, OvalLiquidationDemo__factory, PayBuilder__factory } from "../contract-types";
@@ -88,7 +88,6 @@ async function main() {
 
   // Transaction to unlockLatestValue on Oval Oracle from permissioned address
   // In prod this would be sent by UMA or the Protocol running Oval-RPC, searchers don't need to send this (and can't)
-  const priorityFee = ethers.parseUnits("30", "gwei");
   const unlockTx = {
     type: 2,
     to: OVAL_ADDRESS,
@@ -102,7 +101,6 @@ async function main() {
   };
 
   // Transaction to liquidate the position
-
   const liquidateTransaction = {
     to: LIQUIDATION_DEMO_ADDRESS,
     type: 2,
@@ -209,10 +207,7 @@ async function main() {
   });
 
   const result = await mevShareClient.sendBundle(outterBundle)
-
   bundleHash = keccak256(result.bundleHash);
-
-  console.log("\nLiquidation bundle sent!");
 
   // Wait for the bundle to be found
   while (!bundle) {
@@ -221,8 +216,7 @@ async function main() {
 
   // Stop listening for bundles
   bundleHandler.close();
-
-  console.log("Bundle hash: ", bundle.hash);
+  console.log("Liquidation bundle sent with hash: ", bundle.hash);
 
   for (const tx of bundle.txs || []) {
     provider.waitForTransaction((tx as any).hash).then((receipt) => {
