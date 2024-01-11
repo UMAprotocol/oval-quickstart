@@ -1,6 +1,6 @@
-import MevShareClient, { BundleParams, HintPreferences, IPendingBundle } from "@reinis_frp/mev-share-client";
+import MevShareClient, { BundleParams, IPendingBundle } from "@flashbots/mev-share-client";
 import dotenv from "dotenv";
-import { JsonRpcProvider, Provider, Signer, Transaction, Wallet, ethers, keccak256 } from "ethers";
+import { JsonRpcProvider, Provider, Signer, Wallet, ethers, keccak256 } from "ethers";
 import { ChainlinkOvalImmutable, ChainlinkOvalImmutable__factory, OvalLiquidationDemoPriceFeed, OvalLiquidationDemoPriceFeed__factory, OvalLiquidationDemo__factory, PayBuilder__factory } from "../contract-types";
 
 dotenv.config();
