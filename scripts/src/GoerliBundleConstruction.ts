@@ -35,7 +35,7 @@ const getOvalPriceUpdateSignedTx = async (demoPriceFeed: OvalLiquidationDemoPric
   const callData = await demoPriceFeed.interface.encodeFunctionData("setValues", [newCollateralPrice, newRoundId, newUpdateTime, newUpdateTime, newRoundId]);
 
   return await signer.signTransaction({
-    to: process.env["DEMO_PRICE_FEED_ADDRESS"],
+    to: process.env["OVAL_LIQUIDATION_DEMO_PRICE_FEED_ADDRESS"],
     from: await signer.getAddress(),
     type: 2,
     maxFeePerGas: baseFee * 2n,
@@ -53,7 +53,7 @@ const getUnlockBundle = async (oval: ChainlinkOvalImmutable, refundAddress: stri
   // In prod this would be sent by UMA or the Protocol running Oval Node, searchers don't need to send this (and can't)
   const unlockTx = {
     type: 2,
-    to: process.env["OVAL_ADDRESS"],
+    to: process.env["CHAINLINK_OVAL_IMMUTABLE_ADDRESS"],
     nonce: nonce,
     value: 0,
     gasLimit: 200000,
@@ -94,12 +94,12 @@ async function main() {
   if (!chainId) throw new Error("CHAIN_ID not set");
 
   // Environment variables
-  const DEMO_PRICE_FEED_ADDRESS = process.env["DEMO_PRICE_FEED_ADDRESS"];
-  if (!DEMO_PRICE_FEED_ADDRESS) throw new Error("DEMO_PRICE_FEED_ADDRESS not set");
-  const OVAL_ADDRESS = process.env["OVAL_ADDRESS"];
-  if (!OVAL_ADDRESS) throw new Error("OVAL_ADDRESS not set");
-  const LIQUIDATION_DEMO_ADDRESS = process.env["LIQUIDATION_DEMO_ADDRESS"];
-  if (!LIQUIDATION_DEMO_ADDRESS) throw new Error("LIQUIDATION_DEMO_ADDRESS not set");
+  const OVAL_LIQUIDATION_DEMO_PRICE_FEED_ADDRESS = process.env["OVAL_LIQUIDATION_DEMO_PRICE_FEED_ADDRESS"];
+  if (!OVAL_LIQUIDATION_DEMO_PRICE_FEED_ADDRESS) throw new Error("OVAL_LIQUIDATION_DEMO_PRICE_FEED_ADDRESS not set");
+  const CHAINLINK_OVAL_IMMUTABLE_ADDRESS = process.env["CHAINLINK_OVAL_IMMUTABLE_ADDRESS"];
+  if (!CHAINLINK_OVAL_IMMUTABLE_ADDRESS) throw new Error("CHAINLINK_OVAL_IMMUTABLE_ADDRESS not set");
+  const OVAL_LIQUIDATION_DEMO_ADDRESS = process.env["OVAL_LIQUIDATION_DEMO_ADDRESS"];
+  if (!OVAL_LIQUIDATION_DEMO_ADDRESS) throw new Error("OVAL_LIQUIDATION_DEMO_ADDRESS not set");
   const PAY_BUILDER_ADDRESS = process.env["PAY_BUILDER_ADDRESS"];
   if (!PAY_BUILDER_ADDRESS) throw new Error("PAY_BUILDER_ADDRESS not set");
   const authPrivateKey = process.env["PRIVATE_KEY"];
@@ -117,9 +117,9 @@ async function main() {
 
   const mevShareClient = MevShareClient.fromNetwork(authSigner as any, { chainId: Number(chainId) })
 
-  const demoPriceFeed = await OvalLiquidationDemoPriceFeed__factory.connect(DEMO_PRICE_FEED_ADDRESS, authSigner);
-  const oval = await ChainlinkOvalImmutable__factory.connect(OVAL_ADDRESS, authSigner);
-  const liquidationDemo = await OvalLiquidationDemo__factory.connect(LIQUIDATION_DEMO_ADDRESS, authSigner);
+  const demoPriceFeed = await OvalLiquidationDemoPriceFeed__factory.connect(OVAL_LIQUIDATION_DEMO_PRICE_FEED_ADDRESS, authSigner);
+  const oval = await ChainlinkOvalImmutable__factory.connect(CHAINLINK_OVAL_IMMUTABLE_ADDRESS, authSigner);
+  const liquidationDemo = await OvalLiquidationDemo__factory.connect(OVAL_LIQUIDATION_DEMO_ADDRESS, authSigner);
   const payBuilder = await PayBuilder__factory.connect(PAY_BUILDER_ADDRESS, authSigner);
 
   // Clear previous price feed values so we start with a price of 100
@@ -150,7 +150,7 @@ async function main() {
   // 3.2 Searcher finds the liquidation and sends a bundle to liquidate the position
   // 3.2.1 Transaction to liquidate the position
   const liquidateTransaction = {
-    to: LIQUIDATION_DEMO_ADDRESS,
+    to: OVAL_LIQUIDATION_DEMO_ADDRESS,
     type: 2,
     maxFeePerGas: baseFee * 2n,
     maxPriorityFeePerGas: 0,
@@ -247,9 +247,9 @@ async function main() {
 
   for (const tx of bundle.txs || []) {
     provider.waitForTransaction((tx as any).hash).then((receipt) => {
-      const isPriceUnlock = receipt?.to === OVAL_ADDRESS;
-      const isPriceUpdate = receipt?.to === DEMO_PRICE_FEED_ADDRESS;
-      const isLiquidate = receipt?.to === LIQUIDATION_DEMO_ADDRESS;
+      const isPriceUnlock = receipt?.to === CHAINLINK_OVAL_IMMUTABLE_ADDRESS;
+      const isPriceUpdate = receipt?.to === OVAL_LIQUIDATION_DEMO_PRICE_FEED_ADDRESS;
+      const isLiquidate = receipt?.to === OVAL_LIQUIDATION_DEMO_ADDRESS;
       const isPayBuilder = receipt?.to === PAY_BUILDER_ADDRESS;
       console.log(`\n${isPriceUnlock ? "Price unlock" : isLiquidate ? "Liquidate" : isPayBuilder ? "Pay builder" : isPriceUpdate ? "Price feed update" : "Unknown"} tx mined!`);
       console.log(`Tx hash: ${receipt?.hash}`);
