@@ -6,6 +6,10 @@ This README outlines how to demonstrate a complete Oval workflow on the Goerli t
 
 ## Running the Sample Flashbots Integration on Goerli
 
+### Node.js Version Compatibility
+
+Use **Node.js version 18.14.2 or 18.X** for optimal compatibility with Flashbots TypeScript libraries. Note: Event subscriptions may not function correctly with Node.js version 20.X
+
 ### Prerequisites
 To proceed with this demonstration, ensure you have:
 - **Wallet with Private Key**: If deploying on Goerli, you can fund your wallet [here](https://goerlifaucet.com/), [here](https://faucet.goerli.mudit.blog/), or [here](https://faucet.paradigm.xyz/).
