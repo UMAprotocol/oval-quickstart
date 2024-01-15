@@ -1,36 +1,27 @@
-## Liquidation Demo in Goerli
 
-### 1. Deploy the contracts
+# Oval-Quickstart Repository Overview
 
-```shell
-forge script ./src/script/OvalLiquidationDemo.s.sol:OvalLiquidationDemoScript --rpc-url https://goerli.infura.io/v3/<YOUR-INFURA-KEY> --private-key <YOUR-PRIVATE-KEY> --broadcast --verify --etherscan-api-key <YOUR-ETHERSCAN-API-KEY>
+## Introduction
+This repository is designed to provide practical demonstrations and examples of how to test Oval in different environments. It currently features two key examples:
+
+1. **Aave Liquidation Fork**: A mainnet fork example showing the integration of Oval in Aave. This demo includes a series of unit tests to illustrate the integration process. [Aave Liquidation Fork README](./test/readme.md)
+
+2. **Liquidation Demo in Goerli with Flashbots**: This example showcases a complete Oval workflow on the Goerli test network, utilizing Flashbots for efficient execution. It includes scripts and sample contracts to demonstrate the entire process from monitoring price feeds to executing liquidations. [Goerli Flashbots Integration README](./liquidation-demo-flashbots/readme.md)
+
+## Demos Overview
+
+### Aave Liquidation Fork
+This demo provides a technical example of how Oval can be integrated into the Aave protocol. It focuses on minimal changes required for this integration and demonstrates how Oval can replace Chainlink in the oracle flow of Aave without disrupting its operations.
+
+### Liquidation Demo in Goerli with Flashbots
+This technical example illustrates an end-to-end Oval workflow within the Goerli test network, utilizing Flashbots. It covers the process of a searcher monitoring a Price Feed update and participating in Oval auctions, leading to the execution of a liquidation. The example also includes numerical demonstrations of the profit realized from these operations.
+
+## Getting Started
+To begin exploring these demos, clone the `oval-quickstart` repository and follow the individual READMEs for each demo. Each README provides detailed instructions on prerequisites, setup, and execution steps.
+
+```bash
+git clone https://github.com/UMAprotocol/oval-quickstart.git
 ```
 
-### 2. Prepare environment variables
-
-Create a `.env` file in the `scripts` directory with the following content:
-
-```shell
-NODE_URL_5=<YOUR-ETHEREUM-NODE-URL>
-CHAIN_ID=5
-PRIVATE_KEY=<DEPLOYER-PRIVATE-KEY>
-OVAL_LIQUIDATION_DEMO_PRICE_FEED_ADDRESS=<DEPLOYED-PRICE-FEED-ADDRESS>
-CHAINLINK_OVAL_IMMUTABLE_ADDRESS=<DEPLOYED-OVAL-ADDRESS>
-OVAL_LIQUIDATION_DEMO_ADDRESS=<DEPLOYED-LIQUIDATION-DEMO-ADDRESS>
-PAY_BUILDER_ADDRESS=<DEPLOYED-PAY-BUILDER-ADDRESS>
-```
-
-### 3. Generate types and build demo script
-
-Run the following commands:
-```shell
-forge build
-cd scripts
-yarn && yarn generate-contract-types && yarn build
-```
-
-### 4. Run the demo script
-
-```shell
-node ./out/src/GoerliBundleConstruction.js
-```
+## Additional Resources
+For more information on Oval and its applications, please refer to the Oval documentation.
