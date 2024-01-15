@@ -2,7 +2,7 @@
 pragma solidity 0.8.17;
 
 import {IAggregatorV3Source} from "oval/src/interfaces/chainlink/IAggregatorV3Source.sol";
-import {ChainlinkOvalImmutable} from "./ChainlinkOvalImmutable.sol";
+import {ChainlinkOvalImmutable} from "../ChainlinkOvalImmutable.sol";
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {Address} from "openzeppelin-contracts/contracts/utils/Address.sol";
 

@@ -6,7 +6,7 @@ import "forge-std/Script.sol";
 import {OvalLiquidationDemo} from "../OvalLiquidationDemo.sol";
 import {OvalLiquidationDemoPriceFeed} from "../OvalLiquidationDemoPriceFeed.sol";
 import {IAggregatorV3Source} from "oval/src/interfaces/chainlink/IAggregatorV3Source.sol";
-import {ChainlinkOvalImmutable} from "../ChainlinkOvalImmutable.sol";
+import {ChainlinkOvalImmutable} from "../../ChainlinkOvalImmutable.sol";
 import {PayBuilder} from "../OvalLiquidationDemoPayBuilder.sol";
 
 contract OvalLiquidationDemoScript is Script {
