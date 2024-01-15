@@ -35,7 +35,7 @@ forge build
    ```
 
 2. **Run the Liquidation Script with Flashbots in Goerli**:
-   Fill in the contract addresses and necessary keys in a `.env` file as shown in `/scripts/.env.example`:
+   Fill in the contract addresses and necessary keys in a `.env` file as shown in `/liquidation-demo-flashbots/.env.example`:
    ```
    NODE_URL_5=https://goerli.infura.io/v3/<YOUR-INFURA-KEY>
    CHAIN_ID=5
