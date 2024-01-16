@@ -4,9 +4,9 @@ pragma solidity ^0.8.0;
 // This contract is a mainnet fork test to showcase how Oval can be added to Aave v3 and a demonstrate sample Aave
 // liquidation before and after adding Oval. The tests work by forking mainnet right before a historic Chainlink update
 // on the ETH/USD that created a mainnet liquidation. The Aave chainlink oracle is replaced with a configured Oval
-//instance, to mimic what an Oval Aave intergration would look like. The tests then show that only once the
+//instance, to mimic what an Oval Aave integration would look like. The tests then show that only once the
 // unlocklatestValue function is called can the liquidation be executed. When run on mainnet and in conjuction with
-// mev-share this would only be posible if the liquidator was the winner of the mev-share auction.
+// mev-share this would only be possible if the liquidator was the winner of the mev-share auction.
 
 import {CommonTest} from "./Common.sol";
 
@@ -29,7 +29,7 @@ contract Aave3LiquidationTest is CommonTest {
     IAaveOracle aaveOracle = IAaveOracle(0x54586bE62E3c3580375aE3723C145253060Ca0C2); // Aave v3 oracle
 
     // Chainlink was updated in the block below. The tx hash is the transaction right after the oracle is updated and is
-    // the tx inwhich the liquidation occured on mainnet. This is the Liquidation we will be replaying in the tests.
+    // the tx in which the liquidation occurred on mainnet. This is the Liquidation we will be replaying in the tests.
     // If we want to back run the oracle we want to replace this transaction with our actions in the tests.
     uint256 oracleUpdateBlock = 18018927;
     bytes32 liquidationTx = 0x33ada9fb50abfbf29b59647328bd5fff5121ec04ec43a64f1540de0c898dfd6f;
@@ -43,7 +43,7 @@ contract Aave3LiquidationTest is CommonTest {
     // Show that before the Oracle update the position is healthy and after the update it is not. This creates the
     // conditions for the liquidation that follows in later tests.
     function testUserPositionHealth() public {
-        // We start before applying the oracle update. At this location the position should still be healthy.
+        // We start before applying the oracle update. At this location, the position should still be healthy.
         assertTrue(isPositionHealthy());
 
         assertTrue(block.number == oracleUpdateBlock - 1);
