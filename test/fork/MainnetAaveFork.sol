@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
-// This contract is a mainnet fork test to showcase how Oval can be added to Aave v3 and a demonstrate sample Aave
+// This contract is a mainnet fork test to showcase how Oval can be added to Aave v3 and to demonstrate sample Aave
 // liquidation before and after adding Oval. The tests work by forking mainnet right before a historic Chainlink update
 // on the ETH/USD that created a mainnet liquidation. The Aave chainlink oracle is replaced with a configured Oval
 //instance, to mimic what an Oval Aave intergration would look like. The tests then show that only once the
