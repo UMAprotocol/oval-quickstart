@@ -1,5 +1,9 @@
 
 # Oval-Quickstart Repository Overview
+<p align="center">
+  <img alt="UMA Logo" src="https://i.imgur.com/fSkkK5M.png" width="440">
+</p>
+
 
 ## Introduction
 This repository is designed to provide practical demonstrations and examples of how to test Oval in different environments. It currently features two key examples:
