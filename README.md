@@ -10,7 +10,7 @@ For detailed information on Oval's functionality and integration processes, refe
 
 This repository features essential components for understanding and utilizing Oval, including:
 
-### ChainlinkOvalImmutable Contract
+### `ChainlinkOvalImmutable` Contract
 
 - A standard instance of an Oval contract, exemplifying the most streamlined setup using Chainlink and the Immutable controller. Comprehensive guidance for deployment and practical usage is detailed in the [ChainlinkOvalImmutable deployment](#chainlinkovalimmutable-deployment) section of this document, providing step-by-step instructions.
 
