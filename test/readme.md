@@ -35,7 +35,7 @@ forge build
    forge test
    ```
 
-  The test script forks the Ethereum mainnet to a state before a specific price feed event, allowing you to observe the impact of this event and subsequent liquidation. You can investigate the specific liquidation using tools like Eigenpi.
+  The test script forks the Ethereum mainnet to a state before a specific price feed event, allowing you to observe the impact of this event and subsequent liquidation. You can investigate the specific liquidation using tools like [Eigenpi](https://eigenphi.io/).
 
 ## Additional Information
 
