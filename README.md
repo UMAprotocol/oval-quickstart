@@ -29,7 +29,7 @@ This repository features essential components for understanding and utilizing Ov
   
 ## ChainlinkOvalImmutable deployment
 
-The [Oval contracts](https://github.com/UMAprotocol/oval-contracts) are designed to be composable and modular, enabling the deployer to customize them to their needs. [ChainlinkOvalImmutable](./src/ChainlinkOvalImmutable.sol) is the minimal viable Oval configuration that is perfect for getting started. This Oval contract uses Chainlink as [source](https://github.com/UMAprotocol/oval-contracts/blob/master/src/adapters/source-adapters/ChainlinkSourceAdapter.sol) and [destination](https://github.com/UMAprotocol/oval-contracts/blob/master/src/adapters/destination-adapters/ChainlinkDestinationAdapter.sol) and uses the [Immutable](https://github.com/UMAprotocol/oval-contracts/blob/master/src/controllers/ImmutableController.sol) controller to manage the Oval instance.
+For detailed information on the contract's functionality, please refer to the [Getting Started](https://docs.oval.xyz/integration/getting-started) documentation.
 
 To deploy your own instance of this contract follow these steps:
 
@@ -92,4 +92,4 @@ source .env # Load the variables in the .env file
 forge script ./src/ChainlinkOvalImmutable.s.sol --rpc-url $RPC_MAINNET --broadcast
 ```
 
-This will output the deployment address of your Oval instance. You then need to configure your protocol to use this address in place of the associated Chainlink deployment.&#x20;
+This will output the deployment address of your Oval instance. You then need to configure your protocol to use this address in place of the associated Chainlink deployment.
