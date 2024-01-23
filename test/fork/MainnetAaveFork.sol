@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 // This contract is a mainnet fork test to showcase how Oval can be added to Aave v3 and a demonstrate sample Aave
