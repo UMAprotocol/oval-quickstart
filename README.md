@@ -90,3 +90,10 @@ forge script ./src/ChainlinkOvalImmutable.s.sol --rpc-url $RPC_MAINNET --broadca
 ```
 
 This will output the deployment address of your Oval instance. You then need to configure your protocol to use this address in place of the associated Chainlink deployment.
+
+## License
+
+All code in this repository is licensed under BUSL-1.1 unless specified differently in the file.
+Individual exceptions to this license can be made by Risk Labs, which holds the rights to this
+software and design. If you are interested in using the code or designs in a derivative work,
+feel free to reach out to licensing@risklabs.foundation.
