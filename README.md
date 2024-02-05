@@ -63,7 +63,7 @@ PRIVATE_KEY=0xPUT_YOUR_PRIVATE_KEY_HERE # This account will do the deployment
 SOURCE_ADDRESS=0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419 # example Chainlink ETH/USD
 LOCK_WINDOW=60 # How long each update is blocked for OEV auction to run.
 MAX_TRAVERSAL=4 # How many iterations to look back for historic data.
-UNLOCKERS=0xPUT_YOUR_UNLOCKER_ADDRESS_HERE # Your address or address provided on Discord.
+UNLOCKER=0xPUT_YOUR_UNLOCKER_ADDRESS_HERE # Your unlocker address provided on Discord.
 RPC_MAINNET=PUT_YOUR_RPC_URL_HERE # Your network or fork RPC Url.
 ```
 
