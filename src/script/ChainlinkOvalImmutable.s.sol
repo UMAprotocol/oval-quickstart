@@ -14,7 +14,7 @@ contract ChainlinkOvalImmutableScript is Script {
 
         // This script assumes exactly one unlocker is set. If you want to set more than one, you'll need to modify this
         // script to have an array of known unlocker addresses.
-        string memory unlocker = vm.envAddress("UNLOCKER");
+        address unlocker = vm.envAddress("UNLOCKER");
         address[] memory unlockers = new address[](1);
         unlockers[0] = unlocker;
 
