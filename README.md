@@ -17,7 +17,7 @@ This repository features essential components for understanding and utilizing Ov
 ### Demos
 
 - **Aave Liquidation Fork**: A mainnet fork example showing the integration of Oval in Aave. This demo includes a series of unit tests to illustrate the integration process. [Aave Liquidation Fork README](./test/readme.md).
-- **Liquidation Demo in Goerli with Flashbots**: This example showcases a complete Oval workflow on the Goerli test network, utilizing Flashbots for efficient execution. It includes scripts and sample contracts to demonstrate the entire process from monitoring price feeds to executing liquidations. [Goerli Flashbots Integration README](./liquidation-demo-flashbots/readme.md).
+- **Liquidation Demo in Sepolia with Flashbots**: This example showcases a complete Oval workflow on the Sepolia test network, utilizing Flashbots for efficient execution. It includes scripts and sample contracts to demonstrate the entire process from monitoring price feeds to executing liquidations. [Sepolia Flashbots Integration README](./liquidation-demo-flashbots/readme.md).
 
 ### Building and Testing
 
@@ -35,7 +35,7 @@ To deploy your own instance of this contract, follow these steps:
 This guide makes some assumptions:
 
 1.  Foundry is installed on your machine. If not, it can be found [here](https://book.getfoundry.sh/getting-started/installation).
-2.  You have a wallet and the associated private key for the network you want to deploy on. If deploying on Goerli, you can fund your wallet [here](https://goerlifaucet.com/), [here](https://goerli-faucet.pk910.de/), or [here](https://chainstack.com/goerli-faucet/).
+2.  You have a wallet and the associated private key for the network you want to deploy on. If deploying on Sepolia, you can fund your wallet [here](https://www.alchemy.com/faucets/ethereum-sepolia), [here](https://sepolia-faucet.pk910.de/) or [here](https://faucet..
 3.  You know the address you want to set as the [permissioned actor](https://docs.oval.xyz/mechanism-details/mechanism-description) that can initiate an auction. If this is a production mainnet deployment, reach out to the UMA team. You can contact us on [Discord](https://discord.uma.xyz/).
 4.  You know the address of the Chainlink oracle you want to connect to. A full list of Chainlink oracles can be found [here](https://data.chain.link/ethereum/mainnet/crypto-usd).
 5.  You have an RPC URL to connect to. If not, you can get one from [Infura](https://www.infura.io/).
