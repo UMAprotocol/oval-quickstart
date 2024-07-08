@@ -6,4 +6,5 @@ solc = "0.8.17"
 
 [rpc_endpoints]
 goerli = "${RPC_GOERLI}"
+sepolia = "${RPC_SEPOLIA}"
 mainnet = "${RPC_MAINNET}"

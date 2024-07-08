@@ -14,10 +14,10 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
-"@flashbots/mev-share-client@^0.7.12":
-  version "0.7.12"
-  resolved "https://registry.yarnpkg.com/@flashbots/mev-share-client/-/mev-share-client-0.7.12.tgz#4495c36a56dae8cd7e1462c55f4e26112117382c"
-  integrity sha512-deMaL5ttQ73kUaFsr0LaxA4QoL42b2948oO91o4wFNgS0r93IiQ0ATzU61zo/QQ1UCHuDsymq+bgoWMriEngAA==
+"@flashbots/mev-share-client@^0.7.13":
+  version "0.7.13"
+  resolved "https://registry.yarnpkg.com/@flashbots/mev-share-client/-/mev-share-client-0.7.13.tgz#444a18d2a06334eb950fabe72bb808525a75bf20"
+  integrity sha512-U3/bxHj35vuBcmqbaSPK9laV6gkN+2YUJq0NIZP2PsxGa6KzxUbDW1GP5qC8+GMCJ3CbvgpLiirLjoffXZuhAg==
   dependencies:
     async-mutex "^0.4.0"
     axios "^1.3.4"
